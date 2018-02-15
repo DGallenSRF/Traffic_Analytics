@@ -27,7 +27,8 @@ Month1 <- "April"
 Month2 <- "October"
 
 Data_Charactor <- scott %>%
-  group_by(tmc,month)%>%
+  group_by(tmc,months=ceiling_date(lubridate,"month"))%>%
+  ##group_by(tmc,month)%>%
   summarise(count = n())%>%
   arrange(desc(count))
 Data_Charactor
@@ -38,3 +39,4 @@ Data_Charactor_merge$percent <- Data_Charactor_merge$count/x
 
 View(Data_Charactor_merge##[Data_Charactor_merge$county=="Scott",]
      )
+View(scott)
