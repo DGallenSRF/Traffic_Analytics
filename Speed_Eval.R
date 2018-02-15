@@ -4,17 +4,21 @@ library(dplyr)
 
 setwd("H:/Projects/11000/11187/TS/Task 1")
 
-scott <- read.csv("scott_county_and_supplement.csv",stringsAsFactors = FALSE)
+scott_read <- read.csv("scott_county_and_supplement.csv",stringsAsFactors = FALSE)
 
-str(scott)
+str(scott_read)
 
+scott <- scott_read
 scott$lubridate <- as.POSIXct(scott$date_time,format = "%m/%d/%Y %H:%M")
 
-scott$month <- as.factor(months.POSIXt(scott$lubridate))
-scott$day <- as.factor(weekdays.POSIXt(scott$lubridate))
-scott$hour <- as.factor(format(scott$lubridate,"%H"))
-scott$min <- as.factor(format(scott$lubridate,"%M"))
-scott$speed <- scott$distance/(scott$travel_time_all/3600)
+## We will try to use the lubridate column to filter for specific time periods
+## in case of emergency break glass below
+
+##scott$month <- as.factor(months.POSIXt(scott$lubridate))
+##scott$day <- as.factor(weekdays.POSIXt(scott$lubridate))
+##cott$hour <- as.factor(format(scott$lubridate,"%H"))
+##scott$min <- as.factor(format(scott$lubridate,"%M"))
+##scott$speed <- scott$distance/(scott$travel_time_all/3600)
 
 str(scott)
 
