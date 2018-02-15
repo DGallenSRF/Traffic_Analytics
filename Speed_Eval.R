@@ -31,15 +31,20 @@ TMC_All <- readxl::read_excel("TMC_Scott.xlsx",sheet = 1)
 
 ##str(TMC_All)
 
+## this list of months will be used to filter the dataframe for what we want. 
+##this list needs to be compeleted regardless if the original dataframe only 
+##contains all relevant records.
+
 list_of_Months <- c("April","October")
 
-##unsure of what 1320 is refering to...
-x <- 1320
-
+##the below dataframe summarizes by tmc and month and provides
+##some summary statistics
 
 Data_Charactor <- scott %>%
   group_by(tmc,
            month=as.factor(months.POSIXt(ceiling_date(lubridate,"month"))))%>%
+  ##Grouping using lubridate (as above) provides neater code and more functionality.
+  ##commented out factor group. 
   ##group_by(tmc,month)%>%
   summarise(count = n(),
             speed_std = sd(speed),
@@ -54,8 +59,16 @@ Data_Charactor <- scott %>%
             dist =  mean(distance))%>%
   filter(month %in% list_of_Months)%>%
   arrange(desc(speed_max))
+
+##unsure of what 1320 is reffering to here...
+x <- 1320
 Data_Charactor$perc <- Data_Charactor$count/x
-Data_Charactor
+
+
+## We want to remove all speed points that are classed as outliers.
+## we join the Data_Charactor dataframe to the original data. 
+## This new dataset provides the percentiles by TMC.
+## The filter willretain all the speeds that are 15%>X<85%
 
 scott_outlier <- scott %>% 
   merge(Data_Charactor,by.y = "tmc")%>%
@@ -63,19 +76,17 @@ scott_outlier <- scott %>%
          speed<='85%')%>%
   arrange(speed)
 
+
+## Group by each tmc and each hour and returm the number of records and 
+##the mean speed.
 Data_sum <- scott_outlier %>%
   group_by(tmc,
            ##month=as.factor(months.POSIXt(ceiling_date(lubridate,"month"))),
            hour = as.factor(format(lubridate,"%H")))%>%
-  summarise(count = n(),
-            mean = mean(speed))%>%
-  group_by(tmc##,month
-           )%>%
-  summarise(min_min=mean(mean))
+  summarise(count = n(),mean_speed_by_hour = mean(speed))%>%
+  group_by(tmc)%>%
+  summarise(Congestion_Speed=mean(mean_speed_by_hour))
   
-
-
-
 ##some exploratory plots
 ##d <- ggplot(Data_Charactor,aes(month,speed_std))+
 ##  geom_boxplot(aes(group=month))+
@@ -83,26 +94,23 @@ Data_sum <- scott_outlier %>%
 ##  geom_jitter(width = 0.35,height = 0.25)
 ##ggplotly(d)
 
-
 ##ggplot(scott[1:75000,],aes(x=speed))+
 ##  geom_histogram(bins = 75)+
 ##  facet_wrap(~tmc,nrow = 5)
 
-Data_Sum_merge <- as_tibble(merge(Data_sum,TMC_All,by.y = "tmc"))%>%
-  filter(county=="Scott")
+county_of_interest <- c("Scott")
 
+
+## We merge the summarised dataframe 'Data_sum' with all of the information 
+## for each tmc located in TMC_ALL and filter for our relevant county.
+Data_Sum_merge <- as_tibble(merge(Data_sum,TMC_All,by.y = "tmc"))%>%
+  filter(county==county_of_interest)
+
+## Rearrange the data.frame to get FFS beside 
 Data_Sum_merge <- Data_Sum_merge[c(1,
                                    2,
                                    14,
                                    3:(length(colnames(Data_Sum_merge))-2))]
-
-Data_final <- 
-
- 
-
-
-
-View(Data_Charactor_merge) ##[Data_Charactor_merge$county=="Scott",])
 
 
 
