@@ -38,7 +38,8 @@ x <- 1320
 
 
 Data_Charactor <- scott %>%
-  group_by(tmc,month=as.factor(months.POSIXt(ceiling_date(lubridate,"month"))))%>%
+  group_by(tmc,
+           month=as.factor(months.POSIXt(ceiling_date(lubridate,"month"))))%>%
   ##group_by(tmc,month)%>%
   summarise(count = n(),
             speed_std = sd(speed),
@@ -56,6 +57,23 @@ Data_Charactor <- scott %>%
 Data_Charactor$perc <- Data_Charactor$count/x
 Data_Charactor
 
+scott_outlier <- scott %>% 
+  merge(Data_Charactor,by.y = "tmc")%>%
+  filter(speed>='15%',
+         speed<='85%')%>%
+  arrange(speed)
+
+Data_sum <- scott_outlier %>%
+  group_by(tmc,
+           ##month=as.factor(months.POSIXt(ceiling_date(lubridate,"month"))),
+           hour = as.factor(format(lubridate,"%H")))%>%
+  summarise(count = n(),
+            mean = mean(speed))%>%
+  group_by(tmc##,month
+           )%>%
+  summarise(min_min=mean(mean))
+  
+
 
 
 ##some exploratory plots
@@ -70,8 +88,17 @@ Data_Charactor
 ##  geom_histogram(bins = 75)+
 ##  facet_wrap(~tmc,nrow = 5)
 
-Data_Charactor_merge <- as_tibble(merge(Data_Charactor,TMC_All,by.y = "tmc"))
+Data_Sum_merge <- as_tibble(merge(Data_sum,TMC_All,by.y = "tmc"))%>%
+  filter(county=="Scott")
 
+Data_Sum_merge <- Data_Sum_merge[c(1,
+                                   2,
+                                   14,
+                                   3:(length(colnames(Data_Sum_merge))-2))]
+
+Data_final <- 
+
+ 
 
 
 
