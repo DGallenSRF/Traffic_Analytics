@@ -9,6 +9,7 @@ setwd("H:/Projects/11000/11187/TS/Task 1")
 
 scott_read <- read.csv("scott_county_and_supplement.csv",stringsAsFactors = FALSE)
 
+##summaries of each dataset are commented out
 ##str(scott_read)
 
 scott <- scott_read
