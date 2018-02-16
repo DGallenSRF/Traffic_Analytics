@@ -3,7 +3,7 @@ library(magrittr)
 library(dplyr)
 library(ggplot2)
 library(plotly)
-
+library(gridExtra)
 
 setwd("H:/Projects/11000/11187/TS/Task 1")
 
@@ -25,6 +25,22 @@ scott$speed <- scott$distance/(scott$travel_time_all/3600)
 ##scott$speed <- scott$distance/(scott$travel_time_all/3600)
 
 ##str(scott)
+
+g <- ggplot(scott[1:20000,], aes(tmc, speed))+
+  geom_violin() + 
+  geom_dotplot(binaxis='y', 
+               stackdir='center',
+               binwidth = 0.1,
+               dotsize = .4, 
+               fill="red") +
+  theme(axis.text.x = element_text(angle=65, vjust=0.6)) + 
+  labs(title="x", 
+       subtitle="x",
+       caption="Source: x",
+       x="X",
+       y="X") 
+g
+
 
 
 TMC_All <- readxl::read_excel("TMC_Scott.xlsx",sheet = 1)
@@ -65,6 +81,8 @@ x <- 1320
 Data_Charactor$perc <- Data_Charactor$count/x
 
 
+
+
 ## We want to remove all speed points that are classed as outliers.
 ## we join the Data_Charactor dataframe to the original data. 
 ## This new dataset provides the percentiles by TMC.
@@ -74,9 +92,55 @@ scott_outlier <- scott %>%
   merge(Data_Charactor,by.y = "tmc")%>%
   filter(speed>='15%',
          speed<='85%')%>%
-  arrange(speed)
+  arrange(speed_std)%>%
+  as_tibble()
 
 
+###filtering the now outlier-less data for the highest and lowest 10 
+## std
+top_10 <- scott_outlier %>%
+  group_by(tmc)%>%
+  summarise(speed_std = sd(speed))%>%
+  arrange(desc(speed_std))%>%
+  top_n(10)
+
+bottom_10 <- scott_outlier %>%
+  group_by(tmc)%>%
+  summarise(speed_std = sd(speed))%>%
+  arrange(desc(speed_std))%>%
+  top_n(-10)
+
+###violin plots for each
+g <- ggplot(scott_outlier[scott_outlier$tmc %in% top_10$tmc,],
+            aes(tmc, speed))+
+  geom_violin() + 
+  geom_dotplot(binaxis='y', 
+               stackdir='center',
+               binwidth = 0.5,
+               dotsize = .4, 
+               fill="red") +
+  theme(axis.text.x = element_text(angle=65, vjust=0.6)) + 
+  labs(title="x", 
+       subtitle="x",
+       caption="Source: x",
+       x="X",
+       y="X") 
+h <- ggplot(scott_outlier[scott_outlier$tmc %in% bottom_10$tmc,],
+            aes(tmc, speed))+
+  geom_violin() + 
+  geom_dotplot(binaxis='y', 
+               stackdir='center',
+               binwidth = 0.1,
+               dotsize = .4, 
+               fill="red") +
+  theme(axis.text.x = element_text(angle=65, vjust=0.6)) + 
+  labs(title="x", 
+       subtitle="x",
+       caption="Source: x",
+       x="X",
+       y="X") 
+
+grid.arrange(g,h,ncol=1)
 ## Group by each tmc and each hour and returm the number of records and 
 ##the mean speed.
 Data_sum <- scott_outlier %>%
