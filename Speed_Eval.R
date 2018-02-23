@@ -15,6 +15,8 @@ scott_read <- read.csv("scott_county_and_supplement.csv",stringsAsFactors = FALS
 ##scott will be the working copy
 ##str(scott_read)
 
+###aaah the back and forth of GIT!!!!
+
 scott <- scott_read
 scott$lubridate <- as.POSIXct(scott$date_time,format = "%m/%d/%Y %H:%M")
 scott$speed <- scott$distance/(scott$travel_time_all/3600)
