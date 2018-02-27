@@ -7,11 +7,13 @@ library(gridExtra)
 library(scales)
 library(stringr)
 library(forecast)
+library(ggseas)
 
+install.packages("ggseas")
 
 setwd("H:/Projects/11000/11187/TS/Task 2")
 
-dat <- read.csv(dir()[11],stringsAsFactors = FALSE)
+dat <- read.csv(dir()[2],stringsAsFactors = FALSE)
 
 dim(dat)
 
@@ -62,13 +64,26 @@ Mean_Travel <- dat[!is.na(dat$Travel.Time..minutes.),] %>%
   arrange(day) %>%
   print()
 
-Mean_Travel$sm <- ma(Mean_Travel$Time,order=14)
+Mean_Travel$sm <- ma(Mean_Travel$Time,order=7)
+Mean_Travel$trend <- Mean_Travel$Time - Mean_Travel$sm
 
-ggplot(Mean_Travel)+
-  geom_line(aes(day,sm))+
+f <- ggplot(Mean_Travel)+
+  geom_line(aes(day,sm),color='red')+
+  #geom_line(aes(day,Time),linetype="dashed",size=.5)+
   #geom_line(aes(day,Median),color='red')+
   scale_x_datetime(breaks = date_breaks("1 month"))+
   theme(axis.text.x = element_text(angle=65, vjust=0.6))
+ggplotly(f)
+
+ts_Time = ts(Mean_Travel$Time, frequency = 365,start = c(2014,1))
+decompose_Time = decompose(ts_Time, "additive")
+
+#plot(as.ts(decompose_Time$seasonal))
+#plot(as.ts(decompose_Time$trend))
+#plot(as.ts(decompose_Time$random))
+plot(decompose_Time)
+
+
 
   ## plot of totoal NAs per day from 5am to 9pm
 g <- dat[dat$hour %in% c(5:21),] %>%
