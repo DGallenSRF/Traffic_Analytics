@@ -7,26 +7,35 @@ library(gridExtra)
 library(scales)
 library(stringr)
 library(forecast)
-library(ggseas)
 
-install.packages("ggseas")
+
+
 
 setwd("H:/Projects/11000/11187/TS/Task 2")
 
-dat <- read.csv(dir()[16],stringsAsFactors = FALSE)
+TMC_all <- readxl::read_xlsx("TMC_All.xlsx")
 
-dim(dat)
+list_csv <- list.files(pattern = "*.csv")
+myfiles <- lapply(list_csv,read.csv)
+files <- mapply(cbind,myfiles,'filename' = list_csv,SIMPLIFY = F)
 
-dat$Travel.Time..minutes. <- as.numeric(dat$Travel.Time..minutes.)
-dat$lubridate <- as.POSIXct(dat$Timestamp,format = "%Y-%m-%d %H:%M:%S")
-dat$hour <- as.factor(hour(dat$lubridate))
-dat$month <- as.factor(month(dat$lubridate))
-dat$year <- as.factor(year(dat$lubridate))
-dat$weekday <- factor(weekdays(dat$lubridate),levels = c("Monday","Tuesday","Wednesday",
+TMC_data <- do.call("rbind",files)
+
+dim(TMC_data)
+
+TMC_data$Travel.Time..minutes. <- as.numeric(TMC_data$Travel.Time..minutes.)
+TMC_data$lubridate <- as.POSIXct(TMC_data$Timestamp,format = "%Y-%m-%d %H:%M:%S")
+TMC_data$hour <- as.factor(hour(TMC_data$lubridate))
+TMC_data$month <- as.factor(month(TMC_data$lubridate))
+TMC_data$year <- as.factor(year(TMC_data$lubridate))
+TMC_data$weekday <- factor(weekdays(TMC_data$lubridate),levels = c("Monday","Tuesday","Wednesday",
                                                          "Thursday","Friday","Saturday","Sunday"))
-dat$day <- as.factor(day(dat$lubridate))
+TMC_data$day <- as.factor(day(TMC_data$lubridate))
 
-head(dat)
+head(TMC_data)
+
+dat <- TMC_data %>%
+  filter(filename == paste('US-169_Northbound_118P05065_to_118P05066','.csv',sep=))
 
 ##NAs per hour
 dat[!is.na(dat$lubridate),] %>% 
@@ -56,18 +65,24 @@ dat[!is.na(dat$lubridate)&dat$hour %in% c(5:21),] %>%
 ##plot of average travel time per day
 Mean_Travel <- dat[!is.na(dat$Travel.Time..minutes.),] %>% 
   group_by(day=(floor_date(lubridate,"day"))) %>%
-  summarise(Time=mean((Travel.Time..minutes.)),
+  summarise(Mean=mean((Travel.Time..minutes.)),
             Max=max((Travel.Time..minutes.)),
             Min=min((Travel.Time..minutes.)),
             Std=sd((Travel.Time..minutes.)),
             Median=median((Travel.Time..minutes.))) %>%
-  arrange(day) %>%
-  print()
+  arrange(day)
 
-Mean_Travel$sm <- ma(Mean_Travel$Time,order=7)
-Mean_Travel$trend <- Mean_Travel$Time - Mean_Travel$sm
+##x <- dat[dat$year == 2014 &
+           dat$month==9 &
+           dat$day == 15 &
+           !is.na(dat$Travel.Time..minutes.),2]
+##hist(x,breaks=40)
 
-which.max(Mean_Travel$Time)
+
+Mean_Travel$sm <- ma(Mean_Travel$Mean,order=7)=
+Mean_Travel
+
+##plot(Mean_Travel$diff)
 
 f <- ggplot(Mean_Travel)+
   geom_line(aes(day,sm),color='red')+
@@ -77,8 +92,18 @@ f <- ggplot(Mean_Travel)+
   theme(axis.text.x = element_text(angle=65, vjust=0.6))
 ggplotly(f)
 
-ts_Time = ts(Mean_Travel$Time, frequency = 365,start = c(2014,1),end=c(2016,365))
+ts_Time = ts(Mean_Travel$Mean, frequency = 365,start = c(2014,1))
 decompose_Time = decompose(ts_Time, "additive")
+
+#plot(as.ts(decompose_Time$seasonal))
+#plot(as.ts(decompose_Time$trend))
+#plot(as.ts(decompose_Time$random))
+my_plot.decomposed.ts(decompose_Time,"Analysis of Mean Travel Time per Day")
+
+Mean_Travel$seasonal <- as.numeric((decompose_Time$seasonal))
+
+arrange(Mean_Travel,desc(seasonal))%>% print(n=40)
+hist(Mean_Travel$seasonal)
 
 my_plot.decomposed.ts = function(x, title="", ...) {
   xx <- x$x
@@ -90,16 +115,5 @@ my_plot.decomposed.ts = function(x, title="", ...) {
        main=title, ...)
 }
 
-
-#plot(as.ts(decompose_Time$seasonal))
-#plot(as.ts(decompose_Time$trend))
-#plot(as.ts(decompose_Time$random))
-my_plot.decomposed.ts(decompose_Time,"Analysis of Mean Travel")
-
-
-autoplot(ts_Time)
-gglagplot(ts_Time)
-ggAcf(ts_Time)
-autoplot(diff(ts_Time,lag = 2))
 
 
