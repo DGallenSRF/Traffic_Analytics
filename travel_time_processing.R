@@ -13,7 +13,7 @@ install.packages("ggseas")
 
 setwd("H:/Projects/11000/11187/TS/Task 2")
 
-dat <- read.csv(dir()[2],stringsAsFactors = FALSE)
+dat <- read.csv(dir()[16],stringsAsFactors = FALSE)
 
 dim(dat)
 
@@ -67,6 +67,8 @@ Mean_Travel <- dat[!is.na(dat$Travel.Time..minutes.),] %>%
 Mean_Travel$sm <- ma(Mean_Travel$Time,order=7)
 Mean_Travel$trend <- Mean_Travel$Time - Mean_Travel$sm
 
+which.max(Mean_Travel$Time)
+
 f <- ggplot(Mean_Travel)+
   geom_line(aes(day,sm),color='red')+
   #geom_line(aes(day,Time),linetype="dashed",size=.5)+
@@ -75,32 +77,29 @@ f <- ggplot(Mean_Travel)+
   theme(axis.text.x = element_text(angle=65, vjust=0.6))
 ggplotly(f)
 
-ts_Time = ts(Mean_Travel$Time, frequency = 365,start = c(2014,1))
+ts_Time = ts(Mean_Travel$Time, frequency = 365,start = c(2014,1),end=c(2016,365))
 decompose_Time = decompose(ts_Time, "additive")
+
+my_plot.decomposed.ts = function(x, title="", ...) {
+  xx <- x$x
+  if (is.null(xx)) 
+    xx <- with(x, if (type == "additive") 
+      random + trend + seasonal
+      else random * trend * seasonal)
+  plot(cbind(observed = xx, trend = x$trend, seasonal = x$seasonal, random = x$random), 
+       main=title, ...)
+}
+
 
 #plot(as.ts(decompose_Time$seasonal))
 #plot(as.ts(decompose_Time$trend))
 #plot(as.ts(decompose_Time$random))
-plot(decompose_Time)
+my_plot.decomposed.ts(decompose_Time,"Analysis of Mean Travel")
 
 
-
-  ## plot of totoal NAs per day from 5am to 9pm
-g <- dat[dat$hour %in% c(5:21),] %>%
-  ##dat %>%
-  group_by(day=(floor_date(lubridate,"day"))) %>%
-  summarise(Count = sum(str_count(Travel.Time..minutes., "N/A")),
-            Total = n(),
-            Percent_NA=round(Count/Total,2)) %>%
-  mutate(positionInCategory = 1:n())%>%
-  arrange((day))
-
-p <- ggplot(g,aes(day,Percent_NA))+
-  geom_line()+
-  geom_point()+
-  scale_x_datetime(breaks = date_breaks("1 day"),
-                   labels = date_format("%a"))+
-  theme(axis.text.x = element_text(angle=65, vjust=0.6))
-p
+autoplot(ts_Time)
+gglagplot(ts_Time)
+ggAcf(ts_Time)
+autoplot(diff(ts_Time,lag = 2))
 
 
