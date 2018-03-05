@@ -19,9 +19,13 @@ library(DT)
 options(knitr.table.format = "html") 
 ```
 
+```{r 'setup',include=FALSE}
+require(knitr)
+opts_knit$set(root.dir = "H:/Projects/11000/11187/TS/Task 2")
+```
+
 ```{r}
 
-setwd("H:/Projects/11000/11187/TS/Task 2")
 TMC_all <- readxl::read_xlsx("TMC_All.xlsx")
 TMC_all <- TMC_all[!is.na(TMC_all$distance),]
 str(TMC_all)
