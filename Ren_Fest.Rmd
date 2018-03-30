@@ -1,0 +1,50 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r,echo=FALSE,include=FALSE}
+library(magrittr)
+library(scales)
+library(stringr)
+library(forecast)
+library(leaflet)
+library(tidyverse)
+library(reshape2)
+library(plotly)
+library(lubridate)
+library(kableExtra)
+library(rCharts)
+library(DT)
+options(knitr.table.format = "html") 
+```
+
+```{r 'setup',include=TRUE}
+require(knitr)
+opts_knit$set(root.dir = "H:/Projects/11000/11187/TS/Task 2")
+
+```
+
+```{r,echo=FALSE}
+
+TMC_all <- readxl::read_xlsx("TMC_All.xlsx")
+TMC_all <- TMC_all[!is.na(TMC_all$distance),]
+print(str(TMC_all))
+
+```
+
+We combine all of the downloaded trip data for the area from the TTRMS.exe tool.
+```{r,warning=FALSE,echo=FALSE}
+
+list_csv <- list.files(pattern = "*.csv")
+myfiles <- lapply(list_csv,read.csv)
+files <- mapply(cbind,myfiles,'filename' = list_csv,SIMPLIFY = F)
+TMC_data <- rbind_list(files)
+list_csv
+```
+
+The total dimensions of the combined dataset is `r paste(dim(TMC_data)[1],'rows and',dim(TMC_data)[2],'columns')`.
+
+```{r}
+head(TMC_data)
+```

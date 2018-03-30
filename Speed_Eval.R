@@ -4,6 +4,7 @@ library(dplyr)
 library(ggplot2)
 library(plotly)
 library(gridExtra)
+library(rCharts)
 
 setwd("H:/Projects/11000/11187/TS/Task 1")
 
@@ -15,11 +16,16 @@ scott_read <- read.csv("scott_county_and_supplement.csv",stringsAsFactors = FALS
 ##scott will be the working copy
 ##str(scott_read)
 
-###aaah the back and forth of GIT!!!!
 
 scott <- scott_read
 scott$lubridate <- as.POSIXct(scott$date_time,format = "%m/%d/%Y %H:%M")
 scott$speed <- scott$distance/(scott$travel_time_all/3600)
+
+scott %>% group_by(tmc)%>%
+  summarise(max=max(lubridate),
+            min=min(lubridate))%>%
+  arrange(tmc)%>%
+  print(n=Inf)
 
 ## We will try to use the lubridate column to filter for specific time periods
 ## in case of emergency break glass below
@@ -32,20 +38,36 @@ scott$speed <- scott$distance/(scott$travel_time_all/3600)
 
 ##str(scott)
 
-g <- ggplot(scott[1:20000,], aes(tmc, speed))+
+TMC_78_e <- c('118N15822','118N15823')
+TMC_78_w <- c('118P15823','118P15824')
+
+CR_78_e <- scott %>%
+  filter(tmc %in% TMC_78_e)%>%
+  group_by(lubridate)%>%
+  summarise(Sum = sum(travel_time_all),
+            dist = sum(distance),
+            Count = sum(travel_time_all>0))%>%
+  arrange(lubridate)%>%
+  print()
+  
+CR_78_w <- scott %>%
+  filter(tmc %in% TMC_78_w)%>%
+  group_by(lubridate)%>%
+  summarise(Sum = sum(travel_time_all),
+            dist = sum(distance))%>%
+  arrange(lubridate)%>%
+  print()
+
+g <- ggplot(scott[1:20000,], aes(tmc, speed,color=tmc))+
   geom_violin() + 
-  geom_dotplot(binaxis='y', 
-               stackdir='center',
-               binwidth = 0.1,
-               dotsize = .4, 
-               fill="red") +
+  geom_jitter(size=0.1,alpha=0.6)+
   theme(axis.text.x = element_text(angle=65, vjust=0.6)) + 
-  labs(title="x", 
-       subtitle="x",
-       caption="Source: x",
-       x="X",
-       y="X") 
-g
+  labs(title="TMC Speed summary by TMC", 
+       subtitle="First 20,000 records",
+       caption="Source: scott_county_and_supplement.csv",
+       x="TMC",
+       y="Speed") 
+ggplotly(g)
 
 
 
@@ -64,7 +86,7 @@ list_of_Months <- c("April","October")
 
 Data_Charactor <- scott %>%
   group_by(tmc,
-           month=as.factor(months.POSIXt(ceiling_date(lubridate,"month"))))%>%
+           month=as.factor(months.POSIXt(floor_date(lubridate,"month"))))%>%
   ##Grouping using lubridate (as above) provides neater code and more functionality.
   ##commented out factor group. 
   ##group_by(tmc,month)%>%
@@ -181,10 +203,6 @@ Data_Sum_merge <- Data_Sum_merge[c(1,
                                    2,
                                    14,
                                    3:(length(colnames(Data_Sum_merge))-2))]
-
-
-
-
 
 
 

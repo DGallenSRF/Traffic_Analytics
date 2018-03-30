@@ -1,0 +1,152 @@
+---
+title: "Travel Times around Renaissamce Festival"
+output: html_notebook
+---
+
+  
+```{r,echo=FALSE,include=FALSE}
+library(magrittr)
+library(scales)
+library(stringr)
+library(forecast)
+library(leaflet)
+library(tidyverse)
+library(reshape2)
+library(plotly)
+library(lubridate)
+library(kableExtra)
+library(rCharts)
+library(DT)
+options(knitr.table.format = "html") 
+```
+
+```{r 'setup',include=FALSE}
+require(knitr)
+opts_knit$set(root.dir = "H:/Projects/11000/11187/TS/Task 2")
+```
+
+```{r,echo=FALSE}
+
+TMC_all <- readxl::read_xlsx("TMC_All.xlsx")
+TMC_all <- TMC_all[!is.na(TMC_all$distance),]
+print(str(TMC_all))
+
+```
+
+We combine all of the downloaded trip data for the area from the TTRMS.exe tool.
+```{r,warning=FALSE,echo=FALSE}
+
+list_csv <- list.files(pattern = "*.csv")
+myfiles <- lapply(list_csv,read.csv)
+files <- mapply(cbind,myfiles,'filename' = list_csv,SIMPLIFY = F)
+TMC_data <- rbind_list(files)
+list_csv
+```
+
+The total dimensions of the combined dataset is `r paste(dim(TMC_data)[1],'rows and',dim(TMC_data)[2],'columns')`.
+
+```{r}
+head(TMC_data)
+```
+
+
+```{r,echo=FALSE,warning=FALSE}
+
+TMC_data %<>% 
+  mutate(Travel.Time..minutes. = as.numeric(Travel.Time..minutes.),
+         lubridate =as.POSIXct(TMC_data$Timestamp,format = "%Y-%m-%d %H:%M:%S"))
+TMC_data %<>% 
+  mutate(hour = as.factor(hour(TMC_data$lubridate)),
+         month = as.factor(month(TMC_data$lubridate)),
+         year = as.factor(year(TMC_data$lubridate)),
+         weekday = factor(weekdays(TMC_data$lubridate),
+                          levels = c("Monday","Tuesday",
+                                     "Wednesday","Thursday",
+                                     "Friday","Saturday","Sunday")),
+         day = as.factor(day(TMC_data$lubridate)),
+         filename_split = filename) 
+
+TMC_data %<>% 
+  separate(filename_split,into = c('Route','Direction','From','NA','To'),sep='_')
+TMC_data$To <- sub(".csv",'',TMC_data$To)
+
+TMC_data_merge <- merge(TMC_data,TMC_all[,c('tmc','latitude','longitude')], 
+                        by.x = 'From',by.y='tmc',all.x=TRUE)
+colnames(TMC_data_merge)[which(names(TMC_data_merge) 
+                               %in% c('latitude','longitude'))] <- c('from_latitude','from_longitude')
+
+TMC_data_merge <- merge(TMC_data_merge,TMC_all[,c('tmc','latitude','longitude')], 
+                        by.x = 'To',by.y='tmc',all.x=TRUE)
+colnames(TMC_data_merge)[which(names(TMC_data_merge) 
+                               %in% c('latitude','longitude'))] <- c('to_latitude','to_longitude')
+
+
+TMC_Unique <- TMC_data_merge[!duplicated(TMC_data_merge$To),
+                             c('To','From',"from_latitude","from_longitude",
+                               "to_latitude","to_longitude","Direction")]
+
+TMC_GPS1 <- melt(TMC_Unique,measure.vars=c('From'),
+                 id.vars=c('from_latitude','from_longitude'),
+                 value.name = 'TMC')
+TMC_GPS2 <- melt(TMC_Unique,measure.vars=c('To'),
+                 id.vars=c('to_latitude','to_longitude'),
+                 value.name = 'TMC')
+
+colnames(TMC_GPS1) <- c('Lat','Long','Variable','TMC')
+colnames(TMC_GPS2) <- c('Lat','Long','Variable','TMC')
+TMC_GPS <- bind_rows(TMC_GPS1,TMC_GPS2)
+TMC_GPS$label <- paste(TMC_GPS$Variable,':',TMC_GPS$TMC,sep = '') 
+```
+
+
+```{r,echo=FALSE,fig.height=5}
+Traffic_camera <- makeIcon('Traffic_camera.png',iconWidth = 24, iconHeight = 20)
+
+leaflet(data=TMC_GPS,width = '100%') %>%
+  setView(lng = -93.550825, lat =  44.721614, zoom = 11)%>%
+  addTiles() %>% 
+  addMarkers(~Long,~Lat,icon=Traffic_camera,label = ~TMC) %>%
+  addProviderTiles(providers$OpenStreetMap)
+
+```
+
+
+
+## Introduction <a name="introduction"></a>
+
+We will look at each TMC individually.
+
+## TMCs in Scott County {.tabset .tabset-fade}
+
+### Tab 1
+
+#### US-169_Southbound_118N04465_to_118N04464 
+
+
+
+
+```{r}
+Fall <- TMC_data_merge %>%
+  filter(filename == paste('US-169_Southbound_118N05070_to_118N05069','.csv',sep='')) %>% 
+  filter(month %in% c(7,8,9,10,11))%>%
+  filter(weekday %in% c('Friday','Saturday','Sunday'))%>%
+  select(lubridate,Travel.Time..minutes.,Distance..miles.,filename,month,day,weekday,year)%>%
+  filter(!is.na(Travel.Time..minutes.))%>%
+  group_by(year,month,weekday,day)%>%
+  summarise(mean=mean(Travel.Time..minutes.))
+
+Fall$day <-   droplevels(Fall$day)
+
+```
+
+```{r}
+plot <- ggplot(Fall,aes(x=month,y=mean,fill=weekday,group=day))+
+  geom_col(position = 'dodge')+
+  ##scale_y_continuous(limits = quantile(Fall$Travel.Time..minutes., c(0.1, 0.9)))+
+  facet_grid(year~.)+
+  ggtitle("Mean Travel Time for Weekend Days")+
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+

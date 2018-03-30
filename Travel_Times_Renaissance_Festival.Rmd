@@ -4,7 +4,7 @@ output: html_notebook
 ---
 
   
-```{r,echo=FALSE,warning=FALSE}
+```{r,echo=FALSE,include=FALSE}
 library(magrittr)
 library(scales)
 library(stringr)
@@ -15,6 +15,7 @@ library(reshape2)
 library(plotly)
 library(lubridate)
 library(kableExtra)
+library(rCharts)
 library(DT)
 options(knitr.table.format = "html") 
 ```
@@ -24,11 +25,11 @@ require(knitr)
 opts_knit$set(root.dir = "H:/Projects/11000/11187/TS/Task 2")
 ```
 
-```{r}
+```{r,echo=FALSE}
 
 TMC_all <- readxl::read_xlsx("TMC_All.xlsx")
 TMC_all <- TMC_all[!is.na(TMC_all$distance),]
-str(TMC_all)
+print(str(TMC_all))
 
 ```
 
@@ -117,7 +118,7 @@ We will look at each TMC individually.
 
 ## TMCs in Scott County {.tabset .tabset-fade}
 
-### tab 1
+### Tab 1
 
 #### US-169_Southbound_118N04465_to_118N04464 
 
@@ -166,11 +167,7 @@ leaflet(data=dat_GPS,width = '100%') %>%
 
 ```
 
-<pre>
 
-
-
-</pre>
 ```{r,echo=FALSE}
 Mean_Travel <- dat[!is.na(dat$Travel.Time..minutes.),] %>% 
   group_by(day=(floor_date(lubridate,"day"))) %>%
@@ -184,7 +181,7 @@ Mean_Travel$year_average <- ma(Mean_Travel$Mean,order=365)
 datatable(Mean_Travel,filter = 'top',options = list(pageLength=7))%>% formatRound(colnames(Mean_Travel[,2:7]),3)%>% formatDate(1,method = 'toDateString')
 ```
 
-```{r,echo=FALSE,fig.height=5,fig.width=10,warning=FALSE}
+```{r,echo=FALSE,fig.height=2,fig.width=10,warning=FALSE}
 f <- ggplot(Mean_Travel)+
   geom_line(aes(day,year_average),color='red')+
   geom_line(aes(day,Mean),linetype="dashed",size=.5)+
@@ -196,6 +193,19 @@ ggplotly(f)
 
 
 ```
+
+
+```{r results = 'asis', comment = NA,echo=FALSE}
+
+p16 = nPlot(uempmed ~ date, data = economics, type = 'sparklinePlus',height=100,width=1000)
+p16$chart(xTickFormat="#!function(d) {return d3.time.format('%b %Y')(new Date( d * 86400000 ));}!#")
+p16$save('Figure_1_1.html', standalone = TRUE)
+
+```
+
+<p align="center">Sparkline</p>
+
+<p align= "center"><iframe src ='Figure_1_1.html' width = "1000" height = "200" frameBorder="0" allowfullscreen ></iframe></p>
 
 
 
@@ -215,7 +225,7 @@ title(main = "US-169_Southbound_118N04465_to_118N04464\n Mean Travel Time Series
 ```
 
 
-### tab 2
+### Tab 2
 
 #### CR-42_Westbound_118P05284_to_118P05285
 
@@ -291,7 +301,7 @@ my_plot.decomposed.ts(decompose_Time)
 title(main = "CR-42_Westbound_118P05284_to_118P05285\n Mean Travel Time Series Analysis")
 ```
 
-### tab 3
+### Tab 3
 
 #### US-169_Northbound_118P05065_to_118P05066
 
@@ -375,7 +385,7 @@ title(main = "US-169_Northbound_118P05065_to_118P05066\n Mean Travel Time Series
 
 
 
-### tab 4
+### Tab 4
 
 #### US-169_Southbound_118N05070_to_118N05069
 
@@ -476,7 +486,7 @@ title(main = "US-169_Southbound_118N05070_to_118N05069\n Mean Travel Time Series
 
 
 
-### tab 5
+### Tab 5
 
 ####US-169_Southbound_118N05071_to_118N05070
 
@@ -578,7 +588,7 @@ title(main = "US-169_Southbound_118N05071_to_118N05070\n Mean Travel Time Series
 
 
 
-### tab 6
+### Tab 6
 
 #### MN-13_Northbound_118P05351_to_118P05352
 
@@ -679,7 +689,7 @@ title(main = "MN-13_Northbound_118P05351_to_118P05352\n Mean Travel Time Series 
 
 
 
-### tab 7
+### Tab 7
 
 #### MN-41_Southbound_118N05381_to_118N05380
 
@@ -775,6 +785,109 @@ decompose_Time = decompose(ts_Time, "additive")
 my_plot.decomposed.ts(decompose_Time)
 title(main = "MN-41_Southbound_118N05381_to_118N05380\n Mean Travel Time Series Analysis")
 ```
+
+
+
+
+### Tab 8
+
+#### MN-41_Northbound_118P05380_to_118P05381
+
+```{r,echo=FALSE}
+my_plot.decomposed.ts = function(x, title="", ...) {
+  xx <- x$x
+  if (is.null(xx)) 
+    xx <- with(x, if (type == "additive") 
+      random + trend + seasonal
+      else random * trend * seasonal)
+  plot(cbind(observed = xx, trend = x$trend, seasonal = x$seasonal, random = x$random), 
+       main=title, ...)
+}
+```
+
+
+```{r,echo=FALSE,warnings=FALSE}
+dat <- TMC_data_merge %>%
+  filter(filename == paste('MN-41_Northbound_118P05380_to_118P05381','.csv',sep=''))
+
+dat_GPS1 <- melt(dat[1,],measure.vars=c('From'),
+                id.vars=c('from_latitude','from_longitude'),
+                value.name = 'TMC')
+dat_GPS2 <- melt(dat[1,],measure.vars=c('To'),
+                     id.vars=c('to_latitude','to_longitude'),
+                     value.name = 'TMC')
+
+colnames(dat_GPS1) <- c('Lat','Long','Variable','TMC')
+colnames(dat_GPS2) <- c('Lat','Long','Variable','TMC')
+dat_GPS <- bind_rows(dat_GPS1,dat_GPS2)
+dat_GPS$label <- paste(dat_GPS$Variable,':',dat_GPS$TMC,sep = '')
+```
+
+
+
+
+
+```{r,echo=FALSE,fig.height=2}
+ 
+leaflet(data=dat_GPS,width = '100%') %>%
+  setView(lng = -93.588347, lat =  44.738049, zoom = 11)%>%
+  addTiles() %>% 
+  addMarkers(~Long,~Lat,icon=Traffic_camera,label = ~TMC) %>%
+  addProviderTiles(providers$OpenStreetMap)
+
+
+```
+
+<pre>
+
+
+
+</pre>
+```{r,echo=FALSE}
+Mean_Travel <- dat[!is.na(dat$Travel.Time..minutes.),] %>% 
+  group_by(day=(floor_date(lubridate,"day"))) %>%
+  summarise(Mean=mean((Travel.Time..minutes.)),
+            Max=max((Travel.Time..minutes.)),
+            Min=min((Travel.Time..minutes.)),
+            Std=sd((Travel.Time..minutes.)),
+            Median=median((Travel.Time..minutes.))) %>%
+  arrange(day)
+Mean_Travel$year_average <- ma(Mean_Travel$Mean,order=365)
+datatable(Mean_Travel,filter = 'top',options = list(pageLength=7))%>% formatRound(colnames(Mean_Travel[,2:7]),3)%>% formatDate(1,method = 'toDateString')
+```
+
+```{r,echo=FALSE,fig.height=5,fig.width=10,warning=FALSE}
+f <- ggplot(Mean_Travel)+
+  geom_line(aes(day,year_average),color='red')+
+  geom_line(aes(day,Mean),linetype="dashed",size=.5)+
+  #geom_line(aes(day,Median),color='red')+
+  scale_x_datetime(breaks = date_breaks("1 month"))+
+  scale_y_continuous(expand = c(0,0))+
+  theme(axis.text.x = element_text(angle=65, vjust=0.6))
+ggplotly(f)
+
+
+```
+
+
+
+We now treat the average travel time per day as a time series. Below is a plot that isolate out the trend and the seasonality of the data set. 
+
+
+
+```{r,echo=FALSE}
+ts_Time = ts(Mean_Travel$Mean, frequency = 365,start = c(2014))
+decompose_Time = decompose(ts_Time, "additive")
+
+#plot(as.ts(decompose_Time$seasonal))
+#plot(as.ts(decompose_Time$trend))
+#plot(as.ts(decompose_Time$random))
+my_plot.decomposed.ts(decompose_Time)
+title(main = "MN-41_Northbound_118P05380_to_118P05381\n Mean Travel Time Series Analysis")
+```
+
+
+
 
 
 
